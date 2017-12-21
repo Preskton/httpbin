@@ -14,6 +14,7 @@ import random
 import time
 import uuid
 import argparse
+import requests
 
 from flask import Flask, Response, request, render_template, redirect, jsonify as flask_jsonify, make_response, url_for, abort
 from flask_common import Common
@@ -856,6 +857,28 @@ def xml():
     response = make_response(render_template("sample.xml"))
     response.headers["Content-Type"] = "application/xml"
     return response
+
+@app.route("/proxy?url=<url>")
+def proxy(url):
+
+    method = request.method
+    body = request.body
+
+    # TODO transfer headers
+
+    # TODO transfer body if it makes sense
+
+    if method == 'GET':
+        proxied_response = requests.get(url)
+    elif method == 'POST':
+        proxied_response = requests.post(url, body)
+
+    return Response(
+        proxied_response.text,
+        status=proxied_response.status_code,
+        content_type=proxied_response.headers['content-type']
+    )
+
 
 
 if __name__ == '__main__':
