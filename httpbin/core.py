@@ -301,7 +301,7 @@ def redirect_to():
         status_code = int(args['status_code'])
         if status_code >= 300 and status_code < 400:
             response.status_code = status_code
-    response.headers['Location'] = args['url'].encode('utf-8')
+    response.headers['Location'] = args['url'].encode('utf-8')    
 
     return response
 
@@ -858,11 +858,17 @@ def xml():
     response.headers["Content-Type"] = "application/xml"
     return response
 
-@app.route("/proxy?url=<url>")
-def proxy(url):
+@app.route("/proxy")
+def proxy():
 
     method = request.method
-    body = request.body
+    body = None
+
+    if request.data is not None:
+        body = request.data
+
+    query_string_items = CaseInsensitiveDict(request.args.items())
+    url = query_string_items['url'].encode('utf-8')
 
     # TODO transfer headers
 

@@ -10,6 +10,7 @@ gevent = "*"
 Flask = "*"
 Flask-Common = "*"
 meinheld = "*"
+requests = "*"
 
 [packages.raven]
 extras = [ "flask",]
