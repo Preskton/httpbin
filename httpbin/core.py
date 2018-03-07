@@ -15,6 +15,7 @@ import time
 import uuid
 import argparse
 import requests
+import socket
 
 from flask import Flask, Response, request, render_template, redirect, jsonify as flask_jsonify, make_response, url_for, abort
 from flask_common import Common
@@ -868,16 +869,30 @@ def proxy():
         body = request.data
 
     query_string_items = CaseInsensitiveDict(request.args.items())
-    url = query_string_items['url'].encode('utf-8')
+    url = query_string_items['url'].encode('utf-8')        
 
-    # TODO transfer headers
+    headers = request.headers
 
-    # TODO transfer body if it makes sense
+    headers['X-Forwarded-For'] = request.remote_addr
+    headers['X-Forwarded-By'] = 'httpbin /proxy'
 
     if method == 'GET':
-        proxied_response = requests.get(url)
+        proxied_response = requests.get(url, headers=headers)
     elif method == 'POST':
-        proxied_response = requests.post(url, body)
+        proxied_response = requests.post(url, body,  headers=headers)
+    elif method == 'PUT':
+        proxied_response = requests.patch(url, body, headers=headers)
+    elif method == 'DELETE':
+        proxied_response = requests.delete(url, headers=headers)
+    elif method == 'PATCH':
+        proxied_response = requests.patch(url, body, headers=headers)
+    elif method == 'HEAD':
+        proxied_response = requests.head(url, headers=headers)
+    elif method == 'OPTIONS':
+        proxied_response = requests.options(url, headers=headers)
+    else:
+        proxied_response = None
+        raise Exception("method " + method + " is not supported.")
 
     return Response(
         proxied_response.text,
@@ -885,7 +900,25 @@ def proxy():
         content_type=proxied_response.headers['content-type']
     )
 
+@app.route('/ping/<host>/<int:port>')
+def ping(host, port):
+    statusText = "Unknown"    
+    statusCode = 400
 
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:        
+        result = sock.connect_ex((host, port))        
+
+        if result == 0:
+            statusText = "Connected! :)"
+            statusCode = 200
+        else:
+            statusText = "Unable to connect. :("
+            statusCode = 500
+    
+    return Response(
+        statusText,
+        status=statusCode
+    )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
